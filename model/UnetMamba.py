@@ -128,8 +128,6 @@ class MambaNet(nn.Module):
         super().__init__()
         self.norm1 = nn.LayerNorm(dim)
         self.norm2 = nn.LayerNorm(dim)
-        
-        self.mamba = Mamba(d_model=dim)
         self.conv = nn.Conv1d(in_channels, in_channels, 3, 1, padding=1)
         self.conv1 = nn.Conv1d(in_channels, in_channels, 3, 1, padding=1)
 
@@ -148,7 +146,6 @@ class MambaNet(nn.Module):
         x = self.norm1(x)
         x = self.act(self.conv(x))
         x = self.dropout(x)
-        x = self.mamba(x)
 
         b, l, d = x.shape
         x = x.view(b, l, d // self.num_heads, self.num_heads)
