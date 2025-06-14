@@ -133,7 +133,7 @@ class MambaNet(nn.Module):
 
         self.act = nn.GELU()
 
-        self.dropout = nn.Dropout(0.2) # JFPM:0.5
+        self.dropout = nn.Dropout(0.2)
         self.num_heads = num_heads
         
         self.mamba_mh = Mamba(d_model=dim // num_heads)
