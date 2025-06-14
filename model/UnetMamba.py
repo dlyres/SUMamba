@@ -50,24 +50,6 @@ class Mlp(nn.Module):
         return x
 
 
-class Block(nn.Module):
-    def __init__(self, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop_ratio=0., attn_drop_ratio=0.,
-                 drop_path_ratio=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
-        super(Block, self).__init__()
-        self.norm1 = norm_layer(dim)
-        self.attn = Attention(dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale,
-                              attn_drop_ratio=attn_drop_ratio, proj_drop_ratio=drop_ratio)
-        self.drop_path = DropPath(drop_path_ratio) if drop_path_ratio > 0. else nn.Identity()
-        self.norm2 = norm_layer(dim)
-        mlp_hidden_dim = int(dim * mlp_ratio)
-        self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop_ratio)
-
-    def forward(self, x):
-        x = x + self.drop_path(self.attn(self.norm1(x)))
-        x = x + self.drop_path(self.mlp(self.norm2(x)))
-        return x
-
-
 
 class SpatialBlock(nn.Module):
     def __init__(self, dim, mlp_ratio, act_layer, norm_layer, kernel_size_spa, drop_ratio=0., drop_path_ratio=0.5):
@@ -136,13 +118,6 @@ class DoubleConv(nn.Module):
             nn.LayerNorm(dim),
             nn.GELU()
         )
-        # self.double_conv = nn.Sequential(
-        #     # MambaNet(dim, in_channels, out_channels),
-        #     # nn.Dropout(0.2),
-        #     nn.Conv1d(in_channels, out_channels, kernel_size=3, padding=1, bias=False),
-        #     nn.LayerNorm(dim),
-        #     nn.GELU(),
-        # )
         
     def forward(self, x):
         return self.double_conv(x)
@@ -160,20 +135,20 @@ class MambaNet(nn.Module):
 
         self.act = nn.GELU()
 
-        self.dropout = nn.Dropout(0.5) # JFPM:0.5
+        self.dropout = nn.Dropout(0.2) # JFPM:0.5
         self.num_heads = num_heads
         
         self.mamba_mh = Mamba(d_model=dim // num_heads)
         self.mambalist = nn.ModuleList(
             self.mamba_mh for _ in range(num_heads)
         )
-        self.attn = Attention(dim, num_heads=8, attn_drop_ratio=0.2, proj_drop_ratio=0.2)
+
         
     def forward(self, x):
         x = self.norm1(x)
         x = self.act(self.conv(x))
         x = self.dropout(x)
-        # x = self.mamba(x)
+        x = self.mamba(x)
 
         b, l, d = x.shape
         x = x.view(b, l, d // self.num_heads, self.num_heads)
@@ -185,7 +160,6 @@ class MambaNet(nn.Module):
         x = self.act(self.conv1(x))
         x = self.norm2(x)
         x = self.dropout(x)
-        # x = self.attn(x)
         return x
 
 class Down(nn.Module):
@@ -209,10 +183,8 @@ class Up(nn.Module):
         super().__init__()
         self.up = nn.ConvTranspose1d(in_channels, out_channels, kernel_size=2, stride=2)
         self.conv = DoubleConv(in_channels, out_channels, dim)
-        # self.mamba = SSVEPMambaBlock(dim=dim // 2, dt_rank=dim // 16, dim_inner=dim // 2, d_state=16)
-        self.mamba = nn.Sequential(
-            MambaNet(dim // 2, in_channels, num_heads)
-        )
+        self.mamba = MambaNet(dim // 2, in_channels, num_heads)
+        
 
     def forward(self, x1, x2):
         x1 = self.mamba(x1)
