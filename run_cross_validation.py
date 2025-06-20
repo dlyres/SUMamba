@@ -184,6 +184,7 @@ if __name__ == '__main__':
 
     # model parameters
     parser.add_argument('--in_c', type=int, default=2)
+    parser.add_argument('--patch_size', type=tuple, default=(6, 64))
     parser.add_argument('--embed_dim', type=int, default=256)
     parser.add_argument('--num_heads', type=int, default=2)
     parser.add_argument('--in_c_spa', type=int, default=4)
