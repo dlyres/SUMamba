@@ -64,12 +64,12 @@ def evaluate(model, data_loader, device, epoch, in_c, dataset_name, num_classes)
         itr_list.append(end_time)
 
         test_loss = loss_cross(output, targets.to(device))
-        total_test__loss += test_loss
+        total_test_loss += test_loss
         accuracy = (output.argmax(1) == targets.to(device)).sum()
         total_test_accuracy = total_test_accuracy + accuracy
         total_acc = total_test_accuracy.item() / sample_num
         data_loader.desc = "[test  epoch {}] loss: {:.3f}, acc: {:.4f}".format(epoch + 1,
-                                                                               total_test__loss,
+                                                                               total_test_loss,
                                                                                total_acc)
 
         for index, i in enumerate(output.argmax(1)):
@@ -90,5 +90,5 @@ def evaluate(model, data_loader, device, epoch, in_c, dataset_name, num_classes)
         targets_roc = label_binarize(targets_roc, classes=[i for i in range(40)])
     micro_auc = round(roc_auc_score(targets_roc, predictions_roc, average='micro'), 4)
 
-    return total_test__loss, class_acc, total_acc, micro_auc, itr_list
+    return total_test_loss, class_acc, total_acc, micro_auc, itr_list
 
